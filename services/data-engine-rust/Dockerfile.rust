@@ -1,0 +1,50 @@
+# ==========================================
+# Stage 1: The Builder (โรงงานประกอบโค้ด)
+# ==========================================
+# ใช้ image อย่างเป็นทางการของ Rust ที่มีขนาดเล็ก (slim) เป็นฐาน
+FROM rust:1.76-slim-bookworm AS builder
+
+# ติดตั้งเครื่องมือพื้นฐานสำหรับ OS ที่จำเป็นต่อการคัมไพล์บางไลบรารี
+RUN apt-get update && apt-get install -y pkg-config libssl-dev
+
+# กำหนดพื้นที่ทำงาน
+WORKDIR /usr/src/app
+
+# คัดลอกไฟล์จัดการ Dependencies มาก่อนเพื่อทำ Caching
+# (ถ้าโค้ดเปลี่ยน แต่ dependencies ไม่เปลี่ยน Docker จะไม่โหลดใหม่)
+COPY Cargo.toml ./
+
+# คัดลอกซอร์สโค้ดและไฟล์อ้างอิงทั้งหมด
+COPY src ./src
+COPY migrations ./migrations
+
+# สั่งคัมไพล์โค้ดแบบรีดประสิทธิภาพสูงสุด (Release Profile)
+RUN cargo build --release --bin data-engine-rust
+
+# ==========================================
+# Stage 2: The Runtime (สภาพแวดล้อมสำหรับรันจริง)
+# ==========================================
+# ใช้ระบบปฏิบัติการ Debian รุ่นเล็กสุดเป็นฐาน (ไม่มีเครื่องมือ Rust แล้ว)
+FROM debian:bookworm-slim
+
+# ติดตั้งเฉพาะไลบรารีที่จำเป็นสำหรับการรัน (เช่น Certificate สำหรับ HTTPS)
+# จากนั้นลบ Cache ทิ้งทันทีเพื่อประหยัดพื้นที่
+RUN apt-get update \
+    && apt-get install -y ca-certificates libssl3 \
+    && rm -rf /var/lib/apt/lists/*
+
+# (Security First) สร้าง User ใหม่ที่ไม่ใช่ Root เพื่อลดความเสี่ยงจากการถูกแฮ็ก
+RUN useradd -ms /bin/bash appuser
+USER appuser
+
+# กำหนดพื้นที่ทำงานสำหรับ Runtime
+WORKDIR /app
+
+# คัดลอก *เฉพาะ* ไฟล์ Binary ที่สร้างเสร็จแล้วจาก Stage 1 มาไว้ที่นี่
+COPY --from=builder /usr/src/app/target/release/data-engine-rust /app/data-engine-rust
+
+# กำหนด Port มาตรฐาน
+EXPOSE 8080
+
+# คำสั่งเริ่มต้นเมื่อ Container ถูกเปิดใช้งาน
+ENTRYPOINT ["/app/data-engine-rust"]
