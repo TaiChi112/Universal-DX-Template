@@ -1,0 +1,52 @@
+services:
+  # ==========================================
+  # 1. Database Service (PostgreSQL)
+  # ==========================================
+  postgres-db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: secretpassword
+      POSTGRES_DB: universal_dx
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # ==========================================
+  # 2. Python Service (FastAPI)
+  # ==========================================
+  core-api-python:
+    build:
+      context: ./services/core-api-python
+      dockerfile: Dockerfile.python
+    ports:
+      - "8000:8000"
+    environment:
+      - RUST_SERVICE_URL=http://data-engine-rust:8080
+    volumes:
+      - ./services/core-api-python/src:/app/src
+    restart: unless-stopped
+
+  # ==========================================
+  # 3. Rust Service (Actix Web)
+  # ==========================================
+  data-engine-rust:
+    build:
+      context: ./services/data-engine-rust
+      dockerfile: Dockerfile.rust
+    ports:
+      - "8080:8080"
+    environment:
+      # ให้ Rust รู้จักทางไปเชื่อมต่อกับ Database ภายในวง Network ของ Docker
+      - DATABASE_URL=postgres://admin:secretpassword@postgres-db:5432/universal_dx
+    volumes:
+      - ./services/data-engine-rust/src:/app/src
+    depends_on:
+      - postgres-db
+    restart: unless-stopped
+
+# ประกาศ Volume ถาวรเพื่อให้ข้อมูลไม่หายไปเมื่อปิด Docker
+volumes:
+  pgdata:
