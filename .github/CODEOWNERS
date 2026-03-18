@@ -1,0 +1,18 @@
+# .github/CODEOWNERS
+
+# Default owner for all files
+* @TaiChi112
+* @anthropic-code-agent
+* @Copilot
+* @openai-code-agent
+* @global-admins
+
+# Service ownership
+/services/core-api-python/ @python-backend-team
+/services/data-engine-rust/ @rust-data-team
+
+# Infrastructure / DevOps ownership
+/docker-compose.yml @devops-team
+**/Dockerfile.* @devops-team
+/.devcontainer/ @devops-team
+/.github/ @devops-team
