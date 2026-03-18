@@ -1,0 +1,62 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Start Database (PostgreSQL)",
+            "type": "shell",
+            "command": "if command -v docker >/dev/null 2>&1; then docker compose up -d postgres-db; else echo \"Docker CLI not found in this task shell. Install/start Docker Desktop and restart VS Code.\"; exit 127; fi",
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "presentation": {
+                "reveal": "silent",
+                "clear": true
+            }
+        },
+        {
+            "label": "Run FastAPI (Python)",
+            "type": "shell",
+            "command": "python -m uvicorn src.main:app --reload --port 8000",
+            "options": {
+                "cwd": "${workspaceFolder}/services/core-api-python"
+            },
+            "presentation": {
+                "group": "multi-backend",
+                "panel": "shared",
+                "clear": true
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Run Actix (Rust)",
+            "type": "shell",
+            "command": "cargo run",
+            "options": {
+                "cwd": "${workspaceFolder}/services/data-engine-rust"
+            },
+            "presentation": {
+                "group": "multi-backend",
+                "panel": "shared",
+                "clear": true
+            },
+            "isBackground": true
+        },
+        {
+            "label": "Start Backend APIs",
+            "dependsOn": [
+                "Run FastAPI (Python)",
+                "Run Actix (Rust)"
+            ],
+            "dependsOrder": "parallel"
+        },
+        {
+            "label": "[RUN] Start Full Environment",
+            "dependsOn": [
+                "Start Database (PostgreSQL)",
+                "Start Backend APIs"
+            ],
+            "dependsOrder": "sequence",
+            "problemMatcher": []
+        }
+    ]
+}

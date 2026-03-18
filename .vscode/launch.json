@@ -1,0 +1,42 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug FastAPI (Python)",
+            "type": "python",
+            "request": "launch",
+            "module": "uvicorn",
+            "args": [
+                "src.main:app",
+                "--reload",
+                "--port",
+                "8000"
+            ],
+            "cwd": "${workspaceFolder}/services/core-api-python",
+            "justMyCode": true
+        },
+        {
+            "name": "Debug Actix (Rust)",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin",
+                    "data-engine-rust",
+                    "--manifest-path=${workspaceFolder}/services/data-engine-rust/Cargo.toml"
+                ]
+            },
+            "cwd": "${workspaceFolder}/services/data-engine-rust"
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Debug All Services (Multi-Target)",
+            "configurations": [
+                "Debug FastAPI (Python)",
+                "Debug Actix (Rust)"
+            ]
+        }
+    ]
+}
