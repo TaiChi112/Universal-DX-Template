@@ -1,0 +1,44 @@
+{
+    "name": "Multi-Backend Universal DX",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    
+    "features": {
+        "ghcr.io/devcontainers/features/git:1": {
+            "version": "latest"
+        },
+        "ghcr.io/devcontainers/features/python:1": {
+            "version": "3.11",
+            "installTools": true
+        },
+        "ghcr.io/devcontainers/features/node:1": {
+            "version": "20",
+            "pnpmVersion": "latest"
+        },
+        "ghcr.io/devcontainers/features/rust:1": {
+            "version": "latest",
+            "profile": "default"
+        }
+    },
+
+    "customizations": {
+        "vscode": {
+            "settings": {
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "editor.formatOnSave": true,
+                "python.defaultInterpreterPath": "/usr/local/bin/python"
+            },
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "rust-lang.rust-analyzer",
+                "dbaeumer.vscode-eslint"
+            ]
+        }
+    },
+
+    "postCreateCommand": "echo 'Checking versions:' && python --version && node --version && cargo --version",
+    
+    "remoteUser": "vscode"
+}
