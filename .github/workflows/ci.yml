@@ -1,0 +1,107 @@
+name: Universal CI Pipeline
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  # ==========================================
+  # 1. ตรวจสอบบริการ Python (FastAPI)
+  # ==========================================
+  python-checks:
+    name: Python Code Quality & Testing
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/core-api-python
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Linting Tools
+        run: python -m pip install --upgrade pip black flake8
+
+      - name: Check Formatting (Black)
+        run: black --check .
+
+      - name: Run Linter (Flake8)
+        run: flake8 .
+
+      # ==========================================
+      # [NEW] ขั้นตอนการรัน Unit Test
+      # ==========================================
+      - name: Run Unit Tests (Pytest)
+        run: pytest -v
+        env:
+          # จำลอง Environment Variable หากจำเป็นต้องใช้ใน Test
+          RUST_SERVICE_URL: "http://localhost:8080"
+
+  # ==========================================
+  # 2. ตรวจสอบบริการ Rust (Actix)
+  # ==========================================
+  rust-checks:
+    name: Rust Code Quality & Testing
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./services/data-engine-rust
+
+      # 1. จำลองฐานข้อมูล PostgreSQL ชั่วคราวบน GitHub Actions
+    services:
+      postgres-db:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: secretpassword
+          POSTGRES_DB: universal_dx
+        ports:
+          - 5432:5432
+        # บังคับให้ระบบรอจนกว่า Database จะบูตเสร็จสมบูรณ์
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # 2. กำหนดตัวแปรให้ Compiler ของ Rust รู้จักฐานข้อมูลจำลอง
+      DATABASE_URL: postgres://admin:secretpassword@localhost:5432/universal_dx
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache Rust Dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check Formatting (Cargo Fmt)
+        run: cargo fmt -- --check
+
+      - name: Run Linter (Cargo Clippy)
+        run: cargo clippy -- -D warnings
+
+      # ==========================================
+      # [NEW] ขั้นตอนการเตรียม Database และรัน Unit Test
+      # ==========================================
+      - name: Install SQLx CLI
+        run: cargo install sqlx-cli --no-default-features --features rustls,postgres
+
+      - name: Run Database Migrations
+        # สั่งสร้างตารางก่อนที่ Compiler จะเริ่มทำงาน
+        run: sqlx migrate run
+
+      - name: Run Unit Tests (Cargo Test)
+        # รันการทดสอบทั้งหมด หากผ่านจะได้ Exit Code 0
+        run: cargo test
