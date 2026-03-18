@@ -1,0 +1,55 @@
+# ==========================================
+# Stage 1: The Builder (โรงงานติดตั้งไลบรารี)
+# ==========================================
+FROM python:3.11-slim-bookworm AS builder
+
+# ตั้งค่าไม่ให้ Python สร้างไฟล์ .pyc (เพื่อประหยัดพื้นที่)
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+WORKDIR /usr/src/app
+
+# ติดตั้งเครื่องมือ OS ที่จำเป็นสำหรับการคัมไพล์ไลบรารี C-extensions
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+# สร้าง Virtual Environment เพื่อแยกไลบรารี
+RUN python -m venv /opt/venv
+# สลับให้คำสั่งรันผ่าน venv เป็นค่าเริ่มต้น
+ENV PATH="/opt/venv/bin:$PATH"
+
+# ติดตั้งเฉพาะไลบรารีสำหรับ Production (ไม่รวม pytest, black, flake8)
+# สมมติฐานว่าคุณจัดการ Dependencies ผ่าน pyproject.toml หรือระบุตรงๆ
+# ในที่นี้เราระบุไลบรารีหลักของโปรเจกต์ลงไปโดยตรงเพื่อความชัดเจนของ Production Build
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir fastapi uvicorn pydantic httpx
+
+# ==========================================
+# Stage 2: The Runtime (สภาพแวดล้อมสำหรับรันจริง)
+# ==========================================
+FROM python:3.11-slim-bookworm
+
+# ตั้งค่า Environment Variables ให้ชี้ไปที่ venv
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+# (Security First) สร้าง User ใหม่เพื่อไม่ให้รันโปรแกรมด้วยสิทธิ์ Root
+RUN useradd -m -s /bin/bash appuser
+USER appuser
+
+WORKDIR /app
+
+# คัดลอก Virtual Environment ที่สมบูรณ์แล้วมาจาก Builder Stage
+COPY --from=builder /opt/venv /opt/venv
+
+# คัดลอกเฉพาะโฟลเดอร์ซอร์สโค้ด (Business Logic)
+# จะไม่มีโฟลเดอร์ tests/ หรือไฟล์ตั้งค่า Linter หลุดเข้ามาในนี้
+COPY ./src ./src
+
+# กำหนด Port มาตรฐาน
+EXPOSE 8000
+
+# คำสั่งเริ่มต้นรันเซิร์ฟเวอร์ Uvicorn แบบ Production
+ENTRYPOINT ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
