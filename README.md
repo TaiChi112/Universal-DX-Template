@@ -2,6 +2,66 @@
 
 Production-ready monorepo for a multi-backend architecture with Python FastAPI, Rust Actix-Web, and PostgreSQL.
 
+## Why This Project Exists
+
+Modern teams often struggle when they need both rapid product iteration and high-performance data processing in the same system.
+
+Common real-world pain points:
+1. A single backend stack becomes a bottleneck because all workloads are forced into one runtime.
+2. Teams cannot experiment quickly because architecture changes are expensive and risky.
+3. Service boundaries are unclear, so ownership and scaling decisions become difficult.
+4. Local development differs from production behavior, causing integration surprises late in delivery.
+
+This project was created as a practical reference implementation to solve those issues with a clear, reproducible foundation.
+
+## Problem Statement
+
+The target use case is document ingestion and processing, where an API must:
+1. Receive files from clients reliably.
+2. Extract or enrich document data with application-level logic.
+3. Persist structured results efficiently.
+
+In many teams, these concerns are mixed into one service, creating tight coupling between HTTP handling, business logic, and persistence. That coupling slows down releases and makes independent scaling difficult.
+
+Universal DX Template demonstrates how to split those concerns into focused services while preserving a smooth developer experience.
+
+## Design Goals
+
+1. Fast iteration for API-facing features in Python FastAPI.
+2. High-throughput persistence path in Rust Actix-Web.
+3. Explicit service contracts and clear network boundaries.
+4. Repeatable local setup using Docker Compose and VS Code tasks.
+5. Clean Architecture principles in the Python service to keep domain logic testable.
+6. Production-minded defaults such as health checks, dependency injection, and CI-friendly structure.
+
+## Intended Audience
+
+This template is for:
+1. Teams exploring polyglot backends (Python + Rust) in one monorepo.
+2. Engineers who want a clean baseline for document-centric backend systems.
+3. Technical leads who need a teaching/reference project for architecture discussions.
+
+## Current Scope and Non-Goals
+
+Current scope:
+1. End-to-end service flow from upload request to database write.
+2. Separation of API orchestration (Python) and data persistence engine (Rust).
+3. Foundational testing and development workflow.
+
+Intentional non-goals in this template stage:
+1. Full OCR/AI production pipeline (OCR adapter is scaffolded and currently mocked).
+2. Complete authn/authz and tenant isolation.
+3. Full observability stack (distributed tracing, metrics dashboards, alerting).
+4. Advanced deployment manifests for Kubernetes or cloud-specific infrastructure.
+
+## What Success Looks Like
+
+If this template is used correctly, you should be able to:
+1. Start all services locally in minutes.
+2. Make changes in one service without breaking ownership boundaries.
+3. Extend endpoints and data models predictably with minimal cross-service friction.
+4. Use this repository as a base for a production project, not only a demo.
+
 ## 1. System Architecture
 
 The repository is organized into independent services with clear responsibilities and explicit network boundaries.
