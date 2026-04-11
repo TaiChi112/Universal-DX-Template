@@ -1,0 +1,8 @@
+CREATE TABLE IF NOT EXISTS documents (
+	id BIGSERIAL PRIMARY KEY,
+	filename TEXT NOT NULL,
+	extracted_text TEXT NOT NULL,
+	confidence_score DOUBLE PRECISION NOT NULL,
+	language TEXT,
+	created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
