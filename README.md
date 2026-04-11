@@ -96,45 +96,29 @@ This starts:
 ## 5. Testing & Code Quality
 
 ### CI/CD pipeline
-GitHub Actions workflow: `.github/workflows/ci.yml`
+GitHub Actions workflow: `.github/workflows/ci.yml` runs on all pushes and pull requests to `main`. It validates code formatting, linting, and test suites for both Python and Rust services.
 
-It runs on pushes and pull requests to `main` with two jobs:
-1. `python-checks`
-2. `rust-checks`
-
-Python CI checks:
-1. `black --check .`
-2. `flake8 .`
-3. `pytest -v`
-
-Rust CI checks:
-1. `cargo fmt -- --check`
-2. `cargo clippy -- -D warnings`
-3. `sqlx migrate run`
-4. `cargo test`
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed command references.
 
 ### Husky hooks
-Configured hooks are in `.husky/`:
-1. `pre-commit.sh` (active)
-2. `pre-push.sh` (currently empty)
-3. `commit-msg.sh` (currently empty)
+Git hooks enforce code quality automatically. Configured hooks are in `.husky/`:
+1. `pre-commit.sh` - Runs formatters (`black`, `cargo fmt`) and linters (`flake8`, `clippy`)
+2. `commit-msg.sh` - Enforces Conventional Commits standard
+3. `pre-push.sh` - Runs test suites (`pytest`, `cargo test`)
 
-Current active pre-commit checks:
-1. Python: `python -m black --check .`, `python -m flake8 .`
-2. Rust: `cargo fmt -- --check`, `cargo clippy -- -D warnings`
+No manual intervention needed; hooks run automatically on `git commit` and `git push`.
 
 ### Run tests locally
-From `services/core-api-python`:
+Refer to [CONTRIBUTING.md](CONTRIBUTING.md#testing-and-code-quality) for testing commands.
 
-```bash
-pytest -v
-```
+## Contributing
 
-From `services/data-engine-rust`:
-
-```bash
-cargo test
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for:
+- Development standards and code style
+- Git workflow and commit message conventions
+- Instructions for scaling the project
+- Adding new services or endpoints
+- Troubleshooting common issues
 
 ## Notes
 
